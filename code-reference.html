@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>مرجع عميل PHP — الاتصال بـ api/send.php</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3d9cf5;
+      --ok: #34c759;
+      --warn: #ffb020;
+      --err: #ff5c5c;
+      --border: #2a3544;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", Tahoma, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; font-size: 1rem; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 1.5rem 1.15rem 3rem; }
+    h1 { font-size: 1.45rem; margin: 0 0 0.5rem; font-weight: 700; }
+    .lead { color: var(--muted); margin: 0 0 1.5rem; font-size: 0.95rem; }
+    h2 { font-size: 1.12rem; margin: 2.25rem 0 0.75rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); color: #fff; }
+    h3 { font-size: 0.98rem; color: var(--muted); margin: 1.25rem 0 0.45rem; font-weight: 600; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+    p, li { color: var(--muted); }
+    .card strong { color: var(--text); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { font-family: ui-monospace, Consolas, monospace; font-size: 0.86em; background: #121a26; padding: 0.12em 0.38em; border-radius: 4px; }
+    pre { font-family: ui-monospace, Consolas, monospace; font-size: 0.82rem; background: #0a0e14; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; overflow: auto; direction: ltr; text-align: left; color: #b8d4ff; line-height: 1.45; }
+    .toc { list-style: none; padding: 0; margin: 0; }
+    .toc li { margin-bottom: 0.4rem; }
+    table.lines { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-top: 0.5rem; }
+    .lines th, .lines td { border: 1px solid var(--border); padding: 0.45rem 0.55rem; text-align: right; vertical-align: top; }
+    .lines th { background: #121a26; color: var(--muted); font-weight: 600; width: 3rem; }
+    .lines td:first-child { font-family: ui-monospace, Consolas, monospace; color: var(--accent); }
+    .warn { background: rgba(255, 176, 32, 0.1); border: 1px solid rgba(255, 176, 32, 0.45); color: #ffe0a3; padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.9rem; }
+    .okbox { background: rgba(52, 199, 89, 0.1); border: 1px solid rgba(52, 199, 89, 0.35); color: #a8e6b5; padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.9rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>مرجع عميل PHP — الاتصال بـ <code>api/send.php</code></h1>
+    <p class="lead">
+      يشرح هذا المستند نفس الفكرة الواردة في <a href="code.md"><code>code.md</code></a> وملف التجربة <a href="test.php"><code>test.php</code></a>:
+      كيف يرسل سيرفرك طلب JSON إلى مشروع الوسيط <strong>sm</strong> ثم يعيد تنسيق الرد.
+    </p>
+
+    <div class="warn">
+      <strong>أمان:</strong> لا تضع مفاتيح API أو كلمات مرور السحابة في مستودع عام. استخدم متغيرات بيئة أو ملف إعداد خارج الويب. المثال أدناه يستخدم قيماً نائبة.
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;border:none;padding:0;">فهرس</h2>
+      <ul class="toc">
+        <li><a href="#goal">١ — الهدف</a></li>
+        <li><a href="#req">٢ — المتطلبات</a></li>
+        <li><a href="#full">٣ — القالب الكامل</a></li>
+        <li><a href="#lines">٤ — شرح سطر بسطر</a></li>
+        <li><a href="#payload">٥ — حقول JSON</a></li>
+        <li><a href="#response">٦ — الرد المتوقع</a></li>
+        <li><a href="#errors">٧ — أخطاء شائعة</a></li>
+        <li><a href="#links">٨ — روابط المشروع</a></li>
+      </ul>
+    </div>
+
+    <h2 id="goal">١ — الهدف</h2>
+    <div class="card">
+      <p>الكود يمثل <strong>عميل HTTP</strong> يرسل <code>POST</code> بجسم <strong>JSON</strong> إلى <code>api/send.php</code> على سيرفر مشروعك، مع ترويسة <code>X-API-Key</code> لمطابقة <code>api.key</code> في <code>config.php</code>. بعدها يطبع JSON يجمع <strong>رمز HTTP</strong> من الوسيط مع <strong>جسم الرد</strong> ليسهل قراءته من متصفح أو من نظام خلفي.</p>
+    </div>
+
+    <h2 id="req">٢ — المتطلبات</h2>
+    <div class="card">
+      <ul>
+        <li><strong>PHP</strong> مع امتداد <code>curl</code>.</li>
+        <li>وصول شبكي من السيرفر الذي يشغّل العميل إلى عنوان <code>api/send.php</code>.</li>
+        <li>على سيرفر <strong>sm</strong>: <code>api.key</code> غير فارغ؛ وقاعدة البيانات مثبتة (<code>install_db.php</code>).</li>
+        <li>بيانات السحابة: إما في JSON (<code>cloud_*</code>) أو في <code>config.php</code> → <code>cloud</code>.</li>
+      </ul>
+    </div>
+
+    <h2 id="full">٣ — القالب الكامل (عناصر نائبة)</h2>
+    <div class="card">
+<pre>&lt;?php
+declare(strict_types=1);
+
+$apiUrl = 'https://your-domain/sm/api/send.php';
+$apiKey = 'YOUR_API_KEY';
+
+$payload = [
+    'phone_number'   => '+966500000000',
+    'message'        => 'نص الرسالة',
+    'cloud_api_url'  => 'https://api.sms-gate.app/3rdparty/v1/message',
+    'cloud_username' => 'CLOUD_USER',
+    'cloud_password' => 'CLOUD_PASS',
+];
+
+$ch = curl_init($apiUrl);
+curl_setopt_array($ch, [
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER     => [
+        'Content-Type: application/json; charset=utf-8',
+        'X-API-Key: ' . $apiKey,
+    ],
+    CURLOPT_TIMEOUT        => 45,
+]);
+
+$raw   = curl_exec($ch);
+$errno = curl_errno($ch);
+$err   = $errno ? curl_error($ch) : '';
+$http  = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+header('Content-Type: application/json; charset=utf-8');
+if ($errno !== 0) {
+    echo json_encode(['ok' => false, 'curl_error' => $err], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+$decoded = json_decode((string) $raw, true);
+echo json_encode(
+    [
+        'http_status_from_sm' => $http,
+        'body'                => is_array($decoded) ? $decoded : $raw,
+    ],
+    JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT
+);</pre>
+    </div>
+
+    <h2 id="lines">٤ — شرح سطر بسطر</h2>
+    <div class="card">
+      <table class="lines">
+        <thead><tr><th>#</th><th>الوظيفة</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>&lt;?php</code> — بداية كتلة PHP.</td></tr>
+          <tr><td>2</td><td><code>declare(strict_types=1)</code> — أنواع صارمة.</td></tr>
+          <tr><td>4–5</td><td>عنوان <code>send.php</code> ومفتاح API.</td></tr>
+          <tr><td>7–13</td><td>مصفوفة الحمولة: رقم، رسالة، و(اختياري) ثلاثية السحابة.</td></tr>
+          <tr><td>15</td><td><code>curl_init</code> — إنشاء جلسة نحو الوسيط.</td></tr>
+          <tr><td>16–25</td><td>ضبط POST، JSON، إرجاع الرد، الترويسات، المهلة.</td></tr>
+          <tr><td>27</td><td><code>curl_exec</code> — تنفيذ الطلب، الناتج في <code>$raw</code>.</td></tr>
+          <tr><td>28–29</td><td>خطأ cURL إن وُجد (شبكة، TLS، timeout…).</td></tr>
+          <tr><td>30</td><td>رمز HTTP من استجابة سيرفر sm.</td></tr>
+          <tr><td>31</td><td><code>curl_close</code> — إغلاق المقبض.</td></tr>
+          <tr><td>33</td><td>ترويسة الاستجابة: JSON للعميل.</td></tr>
+          <tr><td>34–36</td><td>عند فشل النقل: إخراج <code>ok: false</code> ورسالة cURL.</td></tr>
+          <tr><td>39</td><td>فك JSON الرد من sm إلى مصفوفة.</td></tr>
+          <tr><td>40–45</td><td>إخراج موحّد: <code>http_status_from_sm</code> + <code>body</code> (مصفوفة أو نص خام).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="payload">٥ — حقول JSON (مرتبطة بـ <code>api/send.php</code>)</h2>
+    <div class="card">
+      <div class="grid">
+        <div>
+          <h3>أساسية</h3>
+          <ul>
+            <li><code>phone_number</code> أو <code>phone</code></li>
+            <li><code>phoneNumbers</code> — قائمة (سحابة)</li>
+            <li><code>message</code></li>
+          </ul>
+        </div>
+        <div>
+          <h3>اختيارية</h3>
+          <ul>
+            <li><code>gateway_*</code> — إرسال محلي</li>
+            <li><code>cloud_*</code> — سحابة مع الطلب</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="response">٦ — الرد من الوسيط</h2>
+    <div class="card">
+      <div class="okbox">عند HTTP 200 غالباً: <code>success</code>، <code>log_id</code>، <code>inbox_id</code>، <code>delivered</code>، <code>http_code</code>، <code>gateway_response</code>، … راقب <strong>delivered</strong> لأن <code>success: true</code> لا يضمن تسليم المزوّد.</div>
+      <p>التفاصيل الكاملة للحقول والأمثلة: <a href="api-demo.html">api-demo.html</a></p>
+    </div>
+
+    <h2 id="errors">٧ — أخطاء شائعة</h2>
+    <div class="card">
+      <table class="lines">
+        <thead><tr><th>HTTP</th><th>المعنى</th></tr></thead>
+        <tbody>
+          <tr><td>401</td><td>مفتاح مفقود أو خاطئ.</td></tr>
+          <tr><td>400</td><td>JSON غير صالح أو تحقق منطقي من الحقول.</td></tr>
+          <tr><td>503</td><td>API معطّل (<code>api.key</code> فارغ على sm).</td></tr>
+          <tr><td>500</td><td>خطأ قاعدة بيانات على الوسيط.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="links">٨ — روابط المشروع</h2>
+    <div class="card">
+      <ul>
+        <li><a href="README.md">README.md</a> — نظرة عامة على المشروع</li>
+        <li><a href="api-demo.html">api-demo.html</a> — دليل ومحاكاة API</li>
+        <li><a href="test.php">test.php</a> — نسخة تنفيذية للتجربة (عدّل القيم محلياً)</li>
+        <li><a href="code.md">code.md</a> — نفس المرجع بصيغة Markdown</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
