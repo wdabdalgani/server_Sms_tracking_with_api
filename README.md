@@ -22,7 +22,8 @@
 - **PHP** مع امتدادات: `pdo_mysql`, `curl`, `json`, `mbstring`.
 - **MySQL / MariaDB**.
 - **Apache** (أو أي خادم يخدم PHP) — المسار الافتراضي المحلي غالباً `http://localhost/sm/`.
-
+- قم بزيارة https://github.com/capcom6/android-sms-gateway  لتحميل تطبيق apk احدث نسخة ثبت على الجوال قد تواجهك مشكلة في التثبيت من google play اذا احتج اقف تفعيل الامان في google play مؤقتا بعد التثبيت قم بتفعيله
+- التطبيق مهم جدا لانه المحرك الاساسي الذي يخاطب الجوال ويرسل الرسائل 
 ### خطوات أولية
 
 1. انسخ `config.php` وعدّل `db` و`transport` و`api.key` و`cloud` حسب بيئتك.
