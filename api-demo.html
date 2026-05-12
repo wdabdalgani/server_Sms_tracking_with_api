@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>دليل الاتصال بـ API إرسال SMS</title>
+  <style>
+    :root {
+      --bg: #0c0f14;
+      --surface: #151b24;
+      --surface2: #1c2430;
+      --border: #2a3444;
+      --text: #e8edf4;
+      --muted: #8fa3b8;
+      --accent: #4da3ff;
+      --accent2: #7c5cff;
+      --ok: #3dd68c;
+      --warn: #ffb020;
+      --line: #3d4f66;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 1rem;
+    }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+    h1 {
+      font-size: clamp(1.35rem, 4vw, 1.75rem);
+      font-weight: 700;
+      margin: 0 0 0.5rem;
+      background: linear-gradient(120deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .lead { color: var(--muted); margin: 0 0 2rem; font-size: 0.95rem; }
+    h2 {
+      font-size: 1.15rem;
+      margin: 2rem 0 0.75rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+      color: #fff;
+    }
+    h3 { font-size: 1rem; color: var(--muted); margin: 1.25rem 0 0.5rem; font-weight: 600; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.35rem;
+      margin-bottom: 1.25rem;
+    }
+    /* مخطط تدفقي */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 1rem 0;
+      position: relative;
+    }
+    .flow-step {
+      position: relative;
+      padding: 1rem 1rem 1rem 3rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 0.75rem;
+    }
+    .flow-step::before {
+      content: attr(data-n);
+      position: absolute;
+      right: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .flow-arrow {
+      text-align: center;
+      color: var(--accent);
+      font-size: 1.25rem;
+      margin: -0.25rem 0 0.35rem;
+      user-select: none;
+    }
+    .tree {
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 0.82rem;
+      background: #0a0d12;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      color: #b8d4ff;
+      line-height: 1.5;
+      white-space: pre;
+      direction: ltr;
+      text-align: left;
+    }
+    ul.req { margin: 0.5rem 0 0; padding-right: 1.25rem; color: var(--muted); }
+    ul.req li { margin-bottom: 0.4rem; }
+    ul.req strong { color: var(--text); }
+    label { display: block; font-size: 0.82rem; color: var(--muted); margin: 0.5rem 0 0.25rem; }
+    input, textarea {
+      width: 100%;
+      padding: 0.55rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0a0d12;
+      color: var(--text);
+      font-size: 0.92rem;
+    }
+    textarea { min-height: 100px; font-family: inherit; resize: vertical; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    @media (max-width: 640px) { .row2 { grid-template-columns: 1fr; } }
+    .btns { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #2d7fd1); color: #fff; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .out {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 10px;
+      background: #0a0d12;
+      border: 1px solid var(--border);
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      direction: ltr;
+      text-align: left;
+      color: #c5e0ff;
+      min-height: 4rem;
+    }
+    .out.empty { color: var(--muted); font-style: italic; }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 0.35rem;
+    }
+    .badge-post { background: #2d5a87; color: #9fd0ff; }
+    .badge-json { background: #3d2d6e; color: #c4b5ff; }
+    .note {
+      font-size: 0.85rem;
+      color: var(--warn);
+      background: rgba(255, 176, 32, 0.08);
+      border: 1px solid rgba(255, 176, 32, 0.35);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      margin-top: 1rem;
+    }
+    .ok-h { color: var(--ok); }
+    code { background: #0a0d12; padding: 0.12em 0.35em; border-radius: 4px; font-size: 0.88em; }
+    a { color: var(--accent); }
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .legend-item {
+      padding: 0.75rem;
+      background: var(--surface2);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .legend-item b { color: #fff; display: block; margin-bottom: 0.25rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>كيف يطلب سيرفر آخر إرسال رسالة من سيرفرك؟</h1>
+    <p class="lead">
+      هذه الصفحة شرح مرئي + خطوات + <strong>محاكاة</strong> لطلب <code>POST</code> إلى <code>api/send.php</code>.
+      افتحها من المتصفح عبر Apache (مثل <code>http://localhost/sm/api-demo.html</code>) حتى تعمل المحاكاة بنفس النطاق.
+    </p>
+
+    <h2>١) المخطط التنظيمي (من يرتبط بمن؟)</h2>
+    <div class="card">
+      <p style="margin:0 0 1rem;color:var(--muted);">التدفق من اليمين لليسار منطقياً (سيرفرك الخارجي يبدأ الطلب):</p>
+      <div class="flow">
+        <div class="flow-step" data-n="١"><strong>سيرفر نظامك الآخر</strong> (PHP / Node / Python …) — ينفّذ طلب HTTP برمجياً، ويحفظ <code>api.key</code> سرياً على السيرفر فقط.</div>
+        <div class="flow-arrow">↓ POST + JSON + X-API-Key</div>
+        <div class="flow-step" data-n="٢"><strong>سيرفر مشروع sm</strong> — <code>api/send.php</code> يتحقق من المفتاح ثم يوجّه الطلب: إما <strong>سحابة</strong> (<code>api.sms-gate.app</code> من <code>config.php</code>) أو <strong>محلي</strong> إذا أرسلت <code>gateway_*</code> في JSON.</div>
+        <div class="flow-arrow">↓ HTTPS (سحابة) أو HTTP محلي</div>
+        <div class="flow-step" data-n="٣"><strong>Android SMS Gate</strong> — الهاتف متصل أونلاين (سحابة) أو على شبكتك (محلي).</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" data-n="٤"><strong>شبكة الجوال</strong> — تصل SMS إلى رقم المستلم.</div>
+      </div>
+      <p style="margin:0.75rem 0 0;color:var(--muted);font-size:0.9rem;">يُسجَّل كل طلب API (بعد المفتاح + JSON صالح) في <strong>طلبات السيرفرات</strong> مع الرسالة وعنوان IP ونسخة JSON منزوعة كلمات المرور — <a href="server_inbox.php" style="color:var(--accent);">server_inbox.php</a>.</p>
+      <h3>شجرة مبسّطة</h3>
+      <div class="tree">Your Backend
+ └── HTTP POST  (Content-Type: application/json)
+      └── X-API-Key: &lt;من config.php&gt;
+           └── Body (سحابة): { phone_number, message }
+                أو (محلي): { gateway_url, gateway_username, gateway_password, phone_number, message }
+                     └── sm server  (api/send.php)
+                          └── api.sms-gate.app  أو  Gateway LAN
+                               └── الهاتف → SMS</div>
+    </div>
+
+    <h2>٢) المتطلبات قبل أن «يعمل الاتصال»</h2>
+    <div class="card">
+      <ul class="req">
+        <li><strong>سيرفر sm يعمل</strong> (Apache + MySQL) وقاعدة البيانات جاهزة.</li>
+        <li><strong><code>api.key</code></strong> في <code>config.php</code> غير فارغ؛ ونفس القيمة عندك على السيرفر الآخر (كمتغير بيئة أو ملف إعدادات سري).</li>
+        <li><strong>وصول شبكي:</strong> السيرفر الآخر يصل إلى عنوان <code>api/send.php</code> (IP أو دومين؛ نفس LAN أو VPN أو إنترنت مع إعدادات أمنية).</li>
+        <li><strong>وضع السحابة:</strong> من <code>index.php</code> تُدخل عنوان API وبيانات Cloud يدوياً في كل مرة. من الـ API يمكن إما تمرير <code>cloud_api_url</code> و <code>cloud_username</code> و <code>cloud_password</code> في JSON، أو تركها فارغة والاعتماد على <code>config.php</code> → <code>cloud</code> فقط للطلبات البرمجية.</li>
+        <li><strong>وضع محلي:</strong> إما <code>transport</code> = <code>local</code> أو أرسل حقول <code>gateway_*</code> في JSON لتجاوز السحابة لذلك الطلب.</li>
+        <li><strong>الهاتف (سحابة):</strong> التطبيق متصل بالإنترنت وحالة Connected وفق تطبيق SMS Gate.</li>
+        <li><strong>CORS (إن أرسلت من متصفح):</strong> إذا استدعيت الـ API من JavaScript في دومين مختلف، عيّن <code>api.cors_origin</code> في <code>config.php</code>. من نفس المجلد <code>/sm/</code> لا تحتاج CORS.</li>
+      </ul>
+    </div>
+
+    <h2>٣) ماذا ترسل بالضبط؟</h2>
+    <div class="card">
+      <p style="margin:0 0 0.5rem;">
+        <span class="badge badge-post">POST</span>
+        <span class="badge badge-json">application/json</span>
+      </p>
+      <p style="color:var(--muted);margin:0 0 0.75rem;font-size:0.9rem;">ترويسة إلزامية (واحدة تكفي):</p>
+      <div class="tree">X-API-Key: YOUR_SECRET_KEY
+# أو
+Authorization: Bearer YOUR_SECRET_KEY</div>
+      <h3>جسم JSON — وضع سحابي (موصى به)</h3>
+      <p style="color:var(--muted);font-size:0.88rem;margin:0 0 0.5rem;">بدون <code>gateway_*</code>. إمّا أسرار السحابة في <code>config.php</code> فقط، أو تمريرها في الطلب كما يلي.</p>
+      <div class="tree">{
+  "phone_number": "+9665xxxxxxxx",
+  "message": "نص الرسالة"
+}</div>
+      <h3>أو سحابة مع بيانات داخل الطلب (بدون الاعتماد على config)</h3>
+      <div class="tree">{
+  "cloud_api_url": "https://api.sms-gate.app/3rdparty/v1/message",
+  "cloud_username": "من_التطبيق",
+  "cloud_password": "من_التطبيق",
+  "phone_number": "+9665xxxxxxxx",
+  "message": "نص الرسالة"
+}</div>
+      <h3>أو عدة أرقام دفعة واحدة (مع السحابة من config)</h3>
+      <div class="tree">{
+  "message": "نص موحّد"
+}</div>
+      <h3>جسم JSON — Gateway محلي (تجاوز للسحابة)</h3>
+      <div class="tree">{
+  "gateway_url": "http://192.168.1.10:8080/messages",
+  "gateway_username": "sms",
+  "gateway_password": "كلمة_مرور_التطبيق",
+  "phone_number": "+9665xxxxxxxx",
+  "message": "نص الرسالة"
+}</div>
+      <p style="color:var(--muted);font-size:0.88rem;margin:0.75rem 0 0;">يمكن استخدام المفتاح <code>phone</code> بدلاً من <code>phone_number</code>. للمحلي: رقم واحد فقط لكل طلب.</p>
+    </div>
+
+    <h2>٤) خطوات تنفيذية على «السيرفر الآخر» (فكرة عامة)</h2>
+    <div class="card">
+      <ol style="margin:0;padding-right:1.2rem;color:var(--muted);">
+        <li style="margin-bottom:0.5rem;">خزّن عنوان الـ API الكامل، مثل <code>https://your-domain/sm/api/send.php</code>.</li>
+        <li style="margin-bottom:0.5rem;">خزّن <code>api.key</code> بشكل سري (لا تضعه في كود الواجهة الأمامية للزوار).</li>
+        <li style="margin-bottom:0.5rem;">ابنِ كائناً JSON بالحقول أعلاه من منطق نظامك (طلبية، تنبيه، إلخ).</li>
+        <li style="margin-bottom:0.5rem;">أرسل <code>POST</code> مع <code>Content-Type: application/json</code> والترويسة للمفتاح.</li>
+        <li>اقرأ الرد JSON: <code class="ok-h">success</code>، <code>log_id</code>، <code>inbox_id</code> (سجل طلب السيرفر)، <code>delivered</code>، <code>http_code</code>، إلخ.</li>
+      </ol>
+    </div>
+
+    <h2>٥) محاكاة شاملة (من هذه الصفحة)</h2>
+    <div class="card">
+      <p style="margin-top:0;color:var(--muted);font-size:0.9rem;">املأ الحقول ثم «إرسال تجريبي» لاستدعاء <code>api/send.php</code> الحقيقي. المفتاح لا يُحفظ في الصفحة بعد التحديث.</p>
+
+      <label for="apiUrl">عنوان الـ API (نسبي أو كامل)</label>
+      <input id="apiUrl" type="text" value="api/send.php" placeholder="api/send.php أو http://localhost/sm/api/send.php">
+
+      <div class="row2">
+        <div>
+          <label for="apiKey">X-API-Key (من config.php)</label>
+          <input id="apiKey" type="password" autocomplete="off" placeholder="المفتاح">
+        </div>
+        <div>
+          <label for="gwUrl">gateway_url (اتركه فارغاً = سحابة)</label>
+          <input id="gwUrl" type="text" placeholder="فارغ للسحابة — أو عنوان LAN">
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label for="gwUser">gateway_username</label>
+          <input id="gwUser" type="text" placeholder="sms">
+        </div>
+        <div>
+          <label for="gwPass">gateway_password</label>
+          <input id="gwPass" type="password" autocomplete="off" placeholder="كلمة مرور التطبيق">
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label for="phone">phone_number</label>
+          <input id="phone" type="text" placeholder="+966...">
+        </div>
+        <div>
+          <label for="msg">message</label>
+          <input id="msg" type="text" placeholder="نص قصير للتجربة">
+        </div>
+      </div>
+
+      <label>معاينة JSON التي ستُرسل</label>
+      <textarea id="preview" readonly></textarea>
+
+      <div class="btns">
+        <button type="button" class="btn-secondary" id="btnPreview">تحديث المعاينة</button>
+        <button type="button" class="btn-primary" id="btnSend">إرسال تجريبي (fetch)</button>
+        <button type="button" class="btn-secondary" id="btnCurl">نسخ أمر cURL</button>
+      </div>
+
+      <div class="note">
+        إذا فتحت هذه الصفحة كملف <code>file://</code> قد يمنع المتصفح الطلب. استخدم <code>http://localhost/sm/api-demo.html</code>.
+        لا تشارك <code>api.key</code> علناً؛ المحاكاة للتعلم أو الشبكة الموثوقة فقط.
+      </div>
+
+      <h3 style="margin-top:1.25rem;">نتيجة الطلب</h3>
+      <div id="out" class="out empty">لم يُرسل طلب بعد.</div>
+    </div>
+
+    <h2>٦) مفتاح المعنى في الرد</h2>
+    <div class="card legend">
+      <div class="legend-item"><b>success</b> الطلب وُسِّع ووُسِج في قاعدة البيانات (حتى لو فشل الـ Gateway).</div>
+      <div class="legend-item"><b>delivered</b> تقريباً: هل رد الـ Gateway بكود HTTP ضمن النجاح (2xx).</div>
+      <div class="legend-item"><b>log_id</b> رقم السجل في جدول sms_logs.</div>
+      <div class="legend-item"><b>inbox_id</b> رقم سجل الطلب الوارد من السيرفر الآخر (جدول api_server_inbox؛ يُعرض في <a href="server_inbox.php" style="color:var(--accent);">server_inbox.php</a>).</div>
+      <div class="legend-item"><b>401 / 400</b> مفتاح خاطئ أو JSON/حقول غير صالحة.</div>
+      <div class="legend-item"><b>transport</b> في الرد (نجاح): <code>cloud</code> أو <code>local</code> حسب مسار الطلب.</div>
+    </div>
+
+    <p style="margin-top:2rem;font-size:0.85rem;color:var(--muted);">
+      للعودة: <a href="index.php">إرسال</a> · <a href="operations.php">العمليات</a>
+    </p>
+  </div>
+
+  <script>
+    (function () {
+      var apiUrl = document.getElementById('apiUrl');
+      var apiKey = document.getElementById('apiKey');
+      var gwUrl = document.getElementById('gwUrl');
+      var gwUser = document.getElementById('gwUser');
+      var gwPass = document.getElementById('gwPass');
+      var phone = document.getElementById('phone');
+      var msg = document.getElementById('msg');
+      var preview = document.getElementById('preview');
+      var out = document.getElementById('out');
+
+      function buildPayload() {
+        var u = gwUrl.value.trim();
+        if (!u) {
+          return {
+            phone_number: phone.value.trim(),
+            message: msg.value.trim()
+          };
+        }
+        return {
+          gateway_url: u,
+          gateway_username: gwUser.value.trim(),
+          gateway_password: gwPass.value,
+          phone_number: phone.value.trim(),
+          message: msg.value.trim()
+        };
+      }
+
+      function updatePreview() {
+        preview.value = JSON.stringify(buildPayload(), null, 2);
+      }
+
+      document.getElementById('btnPreview').addEventListener('click', updatePreview);
+      ['gwUrl','gwUser','gwPass','phone','msg'].forEach(function (id) {
+        document.getElementById(id).addEventListener('input', updatePreview);
+      });
+
+      document.getElementById('btnSend').addEventListener('click', async function () {
+        updatePreview();
+        out.classList.remove('empty');
+        out.textContent = 'جاري الإرسال...';
+        var url = apiUrl.value.trim() || 'api/send.php';
+        var key = apiKey.value.trim();
+        if (!key) {
+          out.textContent = 'خطأ: أدخل X-API-Key أولاً (من config.php → api.key).';
+          return;
+        }
+        try {
+          var res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': key
+            },
+            body: preview.value
+          });
+          var text = await res.text();
+          var pretty = text;
+          try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch (e) {}
+          out.textContent = 'HTTP ' + res.status + ' ' + res.statusText + '\n\n' + pretty;
+        } catch (err) {
+          out.textContent = 'خطأ شبكة أو CORS أو عنوان خاطئ:\n' + (err && err.message ? err.message : String(err));
+        }
+      });
+
+      document.getElementById('btnCurl').addEventListener('click', function () {
+        updatePreview();
+        var url = apiUrl.value.trim() || 'api/send.php';
+        var abs = url.indexOf('http') === 0 ? url : (window.location.origin + window.location.pathname.replace(/[^/]+$/, '') + url);
+        var key = apiKey.value.trim() || 'YOUR_API_KEY';
+        var oneLine = JSON.stringify(buildPayload());
+        var escBody = oneLine.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        var escKey = key.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        var escUrl = abs.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        var curl = 'curl -X POST "' + escUrl + '" -H "Content-Type: application/json" -H "X-API-Key: ' + escKey + '" --data-raw "' + escBody + '"';
+        out.classList.remove('empty');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(curl).then(function () {
+            out.textContent = 'تم النسخ إلى الحافظة (bash / PowerShell مع curl):\n\n' + curl;
+          }).catch(function () {
+            out.textContent = curl;
+          });
+        } else {
+          out.textContent = curl;
+        }
+      });
+
+      updatePreview();
+    })();
+  </script>
+</body>
+</html>
